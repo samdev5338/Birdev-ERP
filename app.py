@@ -51,10 +51,11 @@ if password == "332005":
     st.title("🏭 Birdev Udyog Samuha")
     st.divider()
 
-    # --- Menu 1: Billing ---
+    # --- Menu 1: Create Invoice ---
     if menu_choice == "🧾 Create Invoice":
         if 'cart' not in st.session_state: st.session_state['cart'] = []
         st.header("🛒 Create New Bill")
+        
         df_p = pd.read_sql_query("SELECT product FROM ProductMaster", conn)
         product_list = df_p['product'].tolist()
 
@@ -71,7 +72,13 @@ if password == "332005":
             cursor.execute("SELECT cost_price, selling_price FROM ProductMaster WHERE product=?", (selected_p,))
             res = cursor.fetchone()
             if res:
-                st.session_state['cart'].append({"Product": selected_p, "Quantity": qty, "Rate": res[1], "Total": res[1]*qty, "Profit": (res[1]-res[0])*qty})
+                st.session_state['cart'].append({
+                    "Product": selected_p, 
+                    "Quantity": qty, 
+                    "Rate": res[1], 
+                    "Total": res[1]*qty, 
+                    "Profit": (res[1]-res[0])*qty
+                })
         
         if st.session_state['cart']:
             df_cart = pd.DataFrame(st.session_state['cart'])
@@ -111,13 +118,59 @@ if password == "332005":
         df_s = pd.read_sql_query("SELECT * FROM SalesHistory", conn)
         if not df_s.empty:
             st.plotly_chart(px.pie(df_s, values='total_bill', names='product', title="Sales Distribution", hole=0.4))
-        else: st.warning("No data found.")
+        else:
+            st.warning("No data found to analyze.")
 
     # --- Menu 3: Customer History ---
     elif menu_choice == "📜 Customer History":
-        st.header("📜 Sales History")
+        st.header("📜 Sales Records")
         df_h = pd.read_sql_query("SELECT * FROM SalesHistory ORDER BY id DESC", conn)
-        st.dataframe(df_h, use_container_width=True, hide_index=True)
+        if not df_h.empty:
+            st.dataframe(df_h, use_container_width=True, hide_index=True)
+        else:
+            st.info("No history found.")
 
-    # --- Menu 4: Manage Products (FIXED DELETE LOGIC) ---
-    elif menu_
+    # --- Menu 4: Manage Products ---
+    elif menu_choice == "⚙️ Manage Products":
+        st.header("⚙️ Product Inventory")
+        col_m1, col_m2 = st.columns(2)
+        
+        with col_m1:
+            st.subheader("➕ Add Product")
+            with st.form("AddProductForm", clear_on_submit=True):
+                new_p = st.text_input("Product Name")
+                new_c = st.number_input("Cost Price", min_value=0.0)
+                new_s = st.number_input("Selling Price", min_value=0.0)
+                if st.form_submit_button("Save Product"):
+                    if new_p:
+                        conn.cursor().execute("INSERT INTO ProductMaster VALUES (?,?,?)", (new_p, new_c, new_s))
+                        conn.commit()
+                        st.success(f"Successfully added {new_p}")
+                        st.rerun()
+
+        with col_m2:
+            st.subheader("🗑️ Delete Product")
+            df_view = pd.read_sql_query("SELECT product FROM ProductMaster", conn)
+            if not df_view.empty:
+                prod_to_del = st.selectbox("Select Product to Remove", df_view['product'].tolist())
+                if st.button("❌ Delete Now"):
+                    conn.cursor().execute("DELETE FROM ProductMaster WHERE product=?", (prod_to_del,))
+                    conn.commit()
+                    st.warning(f"Deleted {prod_to_del}")
+                    st.rerun()
+            else:
+                st.info("Inventory is empty.")
+
+        st.divider()
+        st.subheader("📦 Current List")
+        df_all = pd.read_sql_query("SELECT * FROM ProductMaster", conn)
+        st.dataframe(df_all, use_container_width=True, hide_index=True)
+
+else:
+    st.title("🔒 Birdev ERP Locked")
+    st.info("Please enter the admin password in the sidebar.")
+    st.stop()
+
+# Database band karne se pehle check karein
+if conn:
+    conn.close()
