@@ -4,6 +4,7 @@ import pandas as pd
 from fpdf import FPDF
 import datetime
 import plotly.express as px
+import os
 
 # 1. Page Configuration
 st.set_page_config(page_title="Birdev ERP", page_icon="🌐", layout="wide")
@@ -18,7 +19,6 @@ st.markdown("""
         font-weight: bold; width: 100%; height: 3em;
     }
     .stButton>button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
-    .stDataFrame { border-radius: 10px; overflow: hidden; }
     .developer-box {
         position: fixed; bottom: 20px; right: 20px;
         background: rgba(30, 58, 138, 0.9); color: white;
@@ -51,7 +51,7 @@ if password == "332005":
     st.title("🏭 Birdev Udyog Samuha")
     st.divider()
 
-    # --- Menu 1: Billing (Stylish PDF included) ---
+    # --- Menu 1: Billing ---
     if menu_choice == "🧾 Create Invoice":
         if 'cart' not in st.session_state: st.session_state['cart'] = []
         st.header("🛒 Create New Bill")
@@ -78,14 +78,14 @@ if password == "332005":
             st.table(df_cart[['Product', 'Quantity', 'Rate', 'Total']])
             g_total = df_cart['Total'].sum()
 
-            if st.button("💾 SAVE BILL & GENERATE PDF"):
+            if st.button("💾 SAVE BILL & GENERATE STYLISH PDF"):
                 cursor = conn.cursor()
                 for item in st.session_state['cart']:
                     cursor.execute("INSERT INTO SalesHistory (customer_name, bill_date, product, quantity, total_bill, profit) VALUES (?,?,?,?,?,?)",
                                  (customer_name, bill_date.strftime('%Y-%m-%d'), item['Product'], item['Quantity'], item['Total'], item['Profit']))
                 conn.commit()
 
-                # PDF Logic
+                # Stylish PDF Logic
                 pdf = FPDF()
                 pdf.add_page()
                 pdf.set_fill_color(30, 58, 138); pdf.rect(0, 0, 210, 40, 'F')
@@ -103,37 +103,21 @@ if password == "332005":
                 pdf.output(pdf_output)
                 with open(pdf_output, "rb") as f:
                     st.download_button("📥 DOWNLOAD INVOICE", f, file_name=pdf_output)
-                st.session_state['cart'] = []; st.success("Saved!")
+                st.session_state['cart'] = []; st.success("Invoice Saved!")
+
+    # --- Menu 2: Analytics ---
+    elif menu_choice == "📈 Business Analytics":
+        st.header("📈 Sales Dashboard")
+        df_s = pd.read_sql_query("SELECT * FROM SalesHistory", conn)
+        if not df_s.empty:
+            st.plotly_chart(px.pie(df_s, values='total_bill', names='product', title="Sales Distribution", hole=0.4))
+        else: st.warning("No data found.")
 
     # --- Menu 3: Customer History ---
     elif menu_choice == "📜 Customer History":
-        st.header("📜 Sales Records")
+        st.header("📜 Sales History")
         df_h = pd.read_sql_query("SELECT * FROM SalesHistory ORDER BY id DESC", conn)
         st.dataframe(df_h, use_container_width=True, hide_index=True)
 
-    # --- Menu 4: Manage Products (DELETE OPTION ADDED HERE) ---
-    elif menu_choice == "⚙️ Manage Products":
-        st.header("⚙️ Product Inventory Management")
-        
-        col_m1, col_m2 = st.columns([1, 1])
-        
-        with col_m1:
-            st.subheader("➕ Add New Product")
-            with st.form("AddForm", clear_on_submit=True):
-                new_p = st.text_input("Product Name")
-                new_c = st.number_input("Cost Price (Lagaat)", min_value=0.0)
-                new_s = st.number_input("Selling Price (Rate)", min_value=0.0)
-                if st.form_submit_button("Save Product"):
-                    if new_p:
-                        conn.cursor().execute("INSERT INTO ProductMaster VALUES (?,?,?)", (new_p, new_c, new_s))
-                        conn.commit()
-                        st.success(f"{new_p} added!")
-                        st.rerun()
-
-        with col_m2:
-            st.subheader("🗑️ Delete Product")
-            df_view = pd.read_sql_query("SELECT product FROM ProductMaster", conn)
-            if not df_view.empty:
-                prod_to_del = st.selectbox("Select Product to Remove", df_view['product'].tolist())
-                if st.button("❌ Delete Permanently"):
-                    conn.cursor().execute("DELETE FROM ProductMaster WHERE product=?", (prod
+    # --- Menu 4: Manage Products (FIXED DELETE LOGIC) ---
+    elif menu_
