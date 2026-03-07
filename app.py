@@ -11,15 +11,16 @@ st.set_page_config(page_title="Birdev ERP", page_icon="🌐", layout="wide")
 correct_pass = "332005" 
 user_pass = st.sidebar.text_input("Enter Admin Password", type="password")
 
-if user_pass != correct_pass:
-    st.info("Kripya Sidebar mein sahi password (332005) dalein.")
-    st.stop() # Jab tak password galat hai, niche ka kuch nahi dikhega
-# ================= FUTURISTIC CSS DESIGN & DEVELOPER BOX =================
-st.markdown("""
-    <style>
-    /* बैकग्राउंड और फॉन्ट की सेटिंग */
-    .reportview-container {
-        background: #f0f2f6;
+st.sidebar.title("Login") # Line 14 (Sahi hai)
+st.sidebar.markdown("---") # Line 15 (Sahi hai)
+
+# Password Input (Yahan badlav karna hai)
+password = st.sidebar.text_input("Enter Password", type="password") # Line 18
+
+if password == "332005": # Line 20
+    st.sidebar.success("Login Successful!")
+    # Line 21 wali info line humne delete kar di hai
+    # Iske niche tumhara baaki app shuru hoga...
     }
     /* बटन्स को 3D और फ्यूचरिस्टिक बनाना */
     .stButton>button {
