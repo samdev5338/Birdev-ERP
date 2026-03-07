@@ -14,13 +14,12 @@ user_pass = st.sidebar.text_input("Enter Admin Password", type="password")
 st.sidebar.title("Login") # Line 14 (Sahi hai)
 st.sidebar.markdown("---") # Line 15 (Sahi hai)
 
-# Password Input (Yahan badlav karna hai)
-password = st.sidebar.text_input("Enter Password", type="password") # Line 18
+# Ab ye tumhari nayi Line 18 honi chahiye:
+password = st.sidebar.text_input("Enter Password", type="password")
 
 if password == "332005": # Line 20
     st.sidebar.success("Login Successful!")
     # Line 21 wali info line humne delete kar di hai
-    # Iske niche tumhara baaki app shuru hoga...
     }
     /* बटन्स को 3D और फ्यूचरिस्टिक बनाना */
     .stButton>button {
