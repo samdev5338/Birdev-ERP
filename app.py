@@ -6,7 +6,7 @@ import datetime
 import plotly.express as px
 import os
 
-# 1. Page Configuration
+# 1. Page Configuration hello
 st.set_page_config(page_title="Birdev ERP", page_icon="🌐", layout="wide")
 
 # 2. Futuristic CSS
