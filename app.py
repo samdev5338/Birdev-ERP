@@ -6,7 +6,7 @@ import datetime
 import plotly.express as px
 import os
 
-# 1. Page Configuration hello
+# 1. Page Configuration
 st.set_page_config(page_title="Birdev ERP", page_icon="🌐", layout="wide")
 
 # 2. Futuristic CSS
@@ -77,13 +77,19 @@ if password == "332005":
                     "Quantity": qty, 
                     "Rate": res[1], 
                     "Total": res[1]*qty, 
-                    "Profit": (res[1]-res[0])*qty
+                    "Profit": (res[1]-res[0])*qty  # Profit per item calculated here
                 })
         
         if st.session_state['cart']:
             df_cart = pd.DataFrame(st.session_state['cart'])
-            st.table(df_cart[['Product', 'Quantity', 'Rate', 'Total']])
+            # FIX: Added 'Profit' to the display table so admin can see it
+            st.table(df_cart[['Product', 'Quantity', 'Rate', 'Total', 'Profit']])
+            
             g_total = df_cart['Total'].sum()
+            g_profit = df_cart['Profit'].sum()
+
+            # FIX: Show Grand Total and Overall Profit for this bill clearly
+            st.info(f"💰 **Grand Total: Rs {g_total}/- | 🟢 Total Profit: Rs {g_profit}/-**")
 
             if st.button("💾 SAVE BILL & GENERATE STYLISH PDF"):
                 cursor = conn.cursor()
@@ -92,7 +98,7 @@ if password == "332005":
                                  (customer_name, bill_date.strftime('%Y-%m-%d'), item['Product'], item['Quantity'], item['Total'], item['Profit']))
                 conn.commit()
 
-                # Stylish PDF Logic
+                # Stylish PDF Logic (Profit NOT included here to hide from customer)
                 pdf = FPDF()
                 pdf.add_page()
                 pdf.set_fill_color(30, 58, 138); pdf.rect(0, 0, 210, 40, 'F')
@@ -114,10 +120,27 @@ if password == "332005":
 
     # --- Menu 2: Analytics ---
     elif menu_choice == "📈 Business Analytics":
-        st.header("📈 Sales Dashboard")
+        st.header("📈 Sales & Profit Dashboard")
         df_s = pd.read_sql_query("SELECT * FROM SalesHistory", conn)
         if not df_s.empty:
-            st.plotly_chart(px.pie(df_s, values='total_bill', names='product', title="Sales Distribution", hole=0.4))
+            # FIX: Added Overall Profit and Sales Metrics
+            total_revenue = df_s['total_bill'].sum()
+            total_profit_earned = df_s['profit'].sum()
+            
+            col_metric1, col_metric2 = st.columns(2)
+            col_metric1.metric("Total Revenue (Sales)", f"Rs {total_revenue}/-")
+            col_metric2.metric("Total Profit Earned", f"Rs {total_profit_earned}/-")
+            
+            st.divider()
+            
+            col_chart1, col_chart2 = st.columns(2)
+            with col_chart1:
+                st.plotly_chart(px.pie(df_s, values='total_bill', names='product', title="Sales Distribution", hole=0.4), use_container_width=True)
+            
+            with col_chart2:
+                # FIX: Added a Bar chart to see which product gives the most profit
+                profit_df = df_s.groupby('product', as_index=False)['profit'].sum()
+                st.plotly_chart(px.bar(profit_df, x='product', y='profit', title="Profit by Product", color='product'), use_container_width=True)
         else:
             st.warning("No data found to analyze.")
 
